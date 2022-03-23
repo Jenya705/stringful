@@ -1,6 +1,7 @@
 package com.github.jenya705.stringful;
 
 import java.util.Collection;
+import java.util.function.Consumer;
 
 /**
  * @author Jenya705
@@ -23,10 +24,14 @@ public interface StringfulArgument<T> {
 
     StringfulArgument<T> node(T byValue, StringfulArgument<?> nextArgument);
 
+    StringfulArgument<T> handler(Consumer<StringfulData> handler);
+
     String getName();
 
     Class<T> getArgumentClass();
 
     StringfulArgument<?> getNextNode(Object value);
+
+    Consumer<StringfulData> getHandler();
 
 }

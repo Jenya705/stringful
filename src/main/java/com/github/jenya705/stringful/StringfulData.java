@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * @author Jenya705
@@ -23,6 +24,17 @@ public class StringfulData {
 
     public <T> T getValue(StringfulArgument<T> argument) {
         return getValue(argument.getName());
+    }
+
+    public void handle() {
+        for (int i = arguments.size() - 1; i >= 0; --i) {
+            StringfulArgument<?> argument = arguments.get(i);
+            Consumer<StringfulData> handler = argument.getHandler();
+            if (handler != null) {
+                handler.accept(this);
+                break;
+            }
+        }
     }
 
 }

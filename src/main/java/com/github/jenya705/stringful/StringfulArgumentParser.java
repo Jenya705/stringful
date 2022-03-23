@@ -1,11 +1,13 @@
 package com.github.jenya705.stringful;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Parses input using {@link StringfulArgument}
- * <p>
+ *
  * Parsing rules:
  * - words in " count as one argument (except when before " is \)
  * - words in brackets is array (except when before [ is \)
@@ -55,7 +57,7 @@ public class StringfulArgumentParser {
         });
     }
 
-    public StringfulData parse(StringfulArgument<?> root, String input) {
+    public StringfulData parse(@NotNull StringfulArgument<?> root, String input) {
         List<List<String>> parsedObjects = parseToObjects(input);
         StringfulArgument<?> currentArgument = root;
         Map<String, Object> values = new HashMap<>();
@@ -75,6 +77,7 @@ public class StringfulArgumentParser {
                 }
             }
         }
+        arguments.remove(arguments.size() - 1);
         return new StringfulData(arguments, values);
     }
 

@@ -2,6 +2,7 @@ package com.github.jenya705.stringful;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 /**
  * @author Jenya705
@@ -14,6 +15,7 @@ public class StringfulArgumentImpl<T> implements StringfulArgument<T> {
     private final List<String> tabs = new ArrayList<>();
     private final Map<T, StringfulArgument<?>> nodes = new ConcurrentHashMap<>();
     private StringfulArgument<?> defaultNode = null;
+    private Consumer<StringfulData> handler = null;
 
     public StringfulArgumentImpl(String name, Class<T> argumentClass) {
         this.name = name;
@@ -57,6 +59,12 @@ public class StringfulArgumentImpl<T> implements StringfulArgument<T> {
     }
 
     @Override
+    public StringfulArgument<T> handler(Consumer<StringfulData> handler) {
+        this.handler = handler;
+        return this;
+    }
+
+    @Override
     public String getName() {
         return name;
     }
@@ -69,5 +77,10 @@ public class StringfulArgumentImpl<T> implements StringfulArgument<T> {
     @Override
     public StringfulArgument<?> getNextNode(Object value) {
         return nodes.getOrDefault(value, defaultNode);
+    }
+
+    @Override
+    public Consumer<StringfulData> getHandler() {
+        return handler;
     }
 }
