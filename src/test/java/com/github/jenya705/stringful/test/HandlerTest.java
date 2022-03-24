@@ -16,7 +16,7 @@ public class HandlerTest {
     public void test1() {
         AtomicReference<String> retValue = new AtomicReference<>();
         StringfulArgument<String> helloCommand = StringfulArgument.from(String.class, "hello")
-                .nextArgument(StringfulArgument
+                .defaultNode(StringfulArgument
                         .from(String.class, "name")
                         .handler(data -> retValue.set("hello, " + data.getValue("name")))
                 )

@@ -3,6 +3,8 @@ package com.github.jenya705.stringful;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -35,6 +37,14 @@ public class StringfulData {
                 break;
             }
         }
+    }
+
+    public Collection<String> handleTab(boolean nextArgument) {
+        StringfulArgument<?> argument = arguments.get(arguments.size() - 1);
+        if (nextArgument) {
+            argument = argument.getNextNode(getValue(argument));
+        }
+        return argument == null ? Collections.emptyList() : argument.handleTab(this);
     }
 
 }

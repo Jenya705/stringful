@@ -44,7 +44,7 @@ public class ParserTest {
         StringfulArgumentParser parser = new StringfulArgumentParser();
         StringfulArgument<String[]> argument = StringfulArgument
                 .from(String[].class, "message")
-                .nextArgument(StringfulArgument.from(int.class, "count"));
+                .defaultNode(StringfulArgument.from(int.class, "count"));
         StringfulData data = parser.parse(argument, "hello hello hello");
         Assertions.assertArrayEquals(new String[]{"hello", "hello", "hello"}, data.getValue("message"));
         data = parser.parse(argument, "[hello hello hello] 32");

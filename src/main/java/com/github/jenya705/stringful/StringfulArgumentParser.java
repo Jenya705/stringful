@@ -1,6 +1,8 @@
 package com.github.jenya705.stringful;
 
+import com.github.jenya705.stringful.bukkit.BukkitStringful;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,7 +32,7 @@ public class StringfulArgumentParser {
          * @param values string values which is included in parser (if arguments in brackets list iterator will be limited)
          * @return Parsed value
          */
-        T parse(ListIterator<String> values);
+        @Nullable T parse(@NotNull ListIterator<String> values);
 
     }
 
@@ -55,9 +57,10 @@ public class StringfulArgumentParser {
             while (values.hasNext()) newList.add(values.next());
             return newList.toArray(String[]::new);
         });
+        BukkitStringful.addParsersIfNeed(this);
     }
 
-    public StringfulData parse(@NotNull StringfulArgument<?> root, String input) {
+    public @NotNull StringfulData parse(@NotNull StringfulArgument<?> root, @NotNull String input) {
         List<List<String>> parsedObjects = parseToObjects(input);
         StringfulArgument<?> currentArgument = root;
         Map<String, Object> values = new HashMap<>();
@@ -81,7 +84,7 @@ public class StringfulArgumentParser {
         return new StringfulData(arguments, values);
     }
 
-    public <T> void newParser(Class<T> clazz, Parser<T> parser) {
+    public <T> void newParser(@NotNull Class<T> clazz, @NotNull Parser<T> parser) {
         parsers.put(clazz, parser::parse);
     }
 
