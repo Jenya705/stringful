@@ -1,5 +1,7 @@
 package com.github.jenya705.stringful.bukkit;
 
+import com.github.jenya705.stringful.Stringful;
+import com.github.jenya705.stringful.StringfulArgument;
 import com.github.jenya705.stringful.StringfulArgumentParser;
 import lombok.Getter;
 import lombok.experimental.UtilityClass;
@@ -8,8 +10,22 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
+ * 
+ * Some bukkit things for Stringful.
+ *
+ * features:
+ * - tabs for bukkit interfaces
+ * - parsers for bukkit interfaces
+ *
+ * better to do:
+ * - initialize {@link BukkitOfflineStorage} using method {@link BukkitOfflineStorage#validateInitialized(JavaPlugin)}
+ * 
  * @author Jenya705
  */
 @UtilityClass
@@ -36,8 +52,36 @@ public class BukkitStringful {
     public void addParsersIfNeed(StringfulArgumentParser parser) {
         if (!added) return;
         parser.newParser(Player.class, iterator -> Bukkit.getPlayer(iterator.next()));
-        parser.newParser(OfflinePlayer.class, iterator -> Bukkit.getOfflinePlayer(iterator.next()));
+        parser.newParser(OfflinePlayer.class, iterator -> {
+            if (BukkitOfflineStorage.getInstance() != null) {
+                UUID uuid = BukkitOfflineStorage.getInstance().getUUID(iterator.next());
+                return uuid == null ? null : Bukkit.getOfflinePlayer(uuid);
+            }
+            return Bukkit.getOfflinePlayer(iterator.next());
+        });
         parser.newParser(World.class, iterator -> Bukkit.getWorld(NamespacedKey.minecraft(iterator.next())));
+    }
+
+    public void addDefaultArgumentIfNeed(Stringful stringful) {
+        if (!added) return;
+        stringful.argumentCreator(Player.class, name -> StringfulArgument
+                .from(Player.class, name)
+                .tab(data -> Bukkit
+                        .getOnlinePlayers()
+                        .stream()
+                        .map(Player::getName)
+                        .collect(Collectors.toList())
+                )
+        );
+        stringful.argumentCreator(World.class, name -> StringfulArgument
+                .from(World.class, name)
+                .tab(data -> Bukkit
+                        .getWorlds()
+                        .stream()
+                        .map(world -> world.getKey().getKey())
+                        .collect(Collectors.toList())
+                )
+        );
     }
 
 }
