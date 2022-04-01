@@ -60,11 +60,15 @@ public class StringfulArgumentParser {
         BukkitStringful.addParsersIfNeed(this);
     }
 
-    public @NotNull StringfulData parse(@NotNull StringfulArgument<?> root, @NotNull String input) {
+    public <A> @NotNull StringfulData<A> parse(@NotNull StringfulArgument<?, A> root, @NotNull String input) {
+        return parse(root, input, null);
+    }
+
+    public <A> @NotNull StringfulData<A> parse(@NotNull StringfulArgument<?, A> root, @NotNull String input, @Nullable A additionalInformation) {
         List<List<String>> parsedObjects = parseToObjects(input);
-        StringfulArgument<?> currentArgument = root;
+        StringfulArgument<?, A> currentArgument = root;
         Map<String, Object> values = new HashMap<>();
-        List<StringfulArgument<?>> arguments = new ArrayList<>();
+        List<StringfulArgument<?, A>> arguments = new ArrayList<>();
         arguments.add(currentArgument);
         bracketsLoop:
         for (List<String> brackets : parsedObjects) {
@@ -81,7 +85,7 @@ public class StringfulArgumentParser {
             }
         }
         arguments.remove(arguments.size() - 1);
-        return new StringfulData(arguments, values);
+        return new StringfulData<>(arguments, values, additionalInformation);
     }
 
     public <T> void newParser(@NotNull Class<T> clazz, @NotNull Parser<T> parser) {
@@ -118,7 +122,7 @@ public class StringfulArgumentParser {
                 else if (ch == '\\') {
                     skipNext = true;
                 }
-                else if (ch == '"') {
+                else if (ch == '"' || ch == '\'') {
                     if (inContainer) {
                         currentBrackets.add(input.substring(wordStart + 1, i));
                     }

@@ -1,6 +1,8 @@
 package com.github.jenya705.stringful;
 
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,16 +12,16 @@ import java.util.function.Function;
 /**
  * @author Jenya705
  */
-public class StringfulArgumentImpl<T> implements StringfulArgument<T> {
+public class StringfulArgumentImpl<T, A> implements StringfulArgument<T, A> {
 
     private final String name;
     private final Class<T> argumentClass;
 
     private final List<String> tabs = new ArrayList<>();
-    private final Map<T, StringfulArgument<?>> nodes = new ConcurrentHashMap<>();
-    private StringfulArgument<?> defaultNode = null;
-    private Consumer<StringfulData> handler = null;
-    private Function<StringfulData, Collection<String>> tabFunction = null;
+    private final Map<T, StringfulArgument<?, A>> nodes = new ConcurrentHashMap<>();
+    private StringfulArgument<?, A> defaultNode = null;
+    private Consumer<StringfulData<A>> handler = null;
+    private Function<StringfulData<A>, Collection<String>> tabFunction = null;
 
     public StringfulArgumentImpl(@NotNull String name, @NotNull Class<T> argumentClass) {
         this.name = name;
@@ -27,37 +29,37 @@ public class StringfulArgumentImpl<T> implements StringfulArgument<T> {
     }
 
     @Override
-    public @NotNull StringfulArgument<T> tab(String... values) {
+    public @NotNull StringfulArgument<T, A> tab(String... values) {
         tabs.addAll(Arrays.asList(values));
         return this;
     }
 
     @Override
-    public @NotNull StringfulArgument<T> tab(Collection<String> values) {
+    public @NotNull StringfulArgument<T, A> tab(Collection<String> values) {
         tabs.addAll(values);
         return this;
     }
 
     @Override
-    public @NotNull StringfulArgument<T> tab(Function<StringfulData, Collection<String>> function) {
+    public @NotNull StringfulArgument<T, A> tab(Function<StringfulData<A>, Collection<String>> function) {
         this.tabFunction = function;
         return this;
     }
 
     @Override
-    public @NotNull StringfulArgument<T> defaultNode(StringfulArgument<?> node) {
+    public @NotNull StringfulArgument<T, A> defaultNode(StringfulArgument<?, A> node) {
         defaultNode = node;
         return this;
     }
 
     @Override
-    public @NotNull StringfulArgument<T> node(T byValue, StringfulArgument<?> node) {
+    public @NotNull StringfulArgument<T, A> node(T byValue, StringfulArgument<?, A> node) {
         nodes.put(byValue, node);
         return this;
     }
 
     @Override
-    public @NotNull StringfulArgument<T> handler(Consumer<StringfulData> handler) {
+    public @NotNull StringfulArgument<T, A> handler(Consumer<StringfulData<A>> handler) {
         this.handler = handler;
         return this;
     }
@@ -73,17 +75,17 @@ public class StringfulArgumentImpl<T> implements StringfulArgument<T> {
     }
 
     @Override
-    public StringfulArgument<?> getNextNode(Object value) {
+    public StringfulArgument<?, A> getNextNode(Object value) {
         return nodes.getOrDefault(value, defaultNode);
     }
 
     @Override
-    public Consumer<StringfulData> getHandler() {
+    public Consumer<StringfulData<A>> getHandler() {
         return handler;
     }
 
     @Override
-    public @NotNull Collection<String> handleTab(StringfulData data) {
+    public @NotNull Collection<String> handleTab(StringfulData<A> data) {
         if (tabFunction != null) {
             Collection<String> tabFunctionResult = tabFunction.apply(data);
             if (tabs.isEmpty()) {

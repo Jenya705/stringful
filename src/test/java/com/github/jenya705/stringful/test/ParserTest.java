@@ -16,14 +16,14 @@ public class ParserTest {
 
         StringfulArgumentParser parser = new StringfulArgumentParser();
 
-        StringfulArgument<String> argument = StringfulArgument
-                .from(String.class, "name")
+        StringfulArgument<String, Void> argument = StringfulArgument
+                .from(String.class, Void.class, "name")
                 .node(
                         "jenya705",
-                        StringfulArgument.from(int.class, "ages")
+                        StringfulArgument.from(int.class, Void.class, "ages")
                 );
 
-        StringfulData data = parser.parse(argument, "jenya705 32 ");
+        StringfulData<Void> data = parser.parse(argument, "jenya705 32 ");
 
         Assertions.assertEquals("name", data.getArguments().get(0).getName());
         Assertions.assertEquals("ages", data.getArguments().get(1).getName());
@@ -42,10 +42,10 @@ public class ParserTest {
     @Test
     public void test2() {
         StringfulArgumentParser parser = new StringfulArgumentParser();
-        StringfulArgument<String[]> argument = StringfulArgument
-                .from(String[].class, "message")
-                .defaultNode(StringfulArgument.from(int.class, "count"));
-        StringfulData data = parser.parse(argument, "hello hello hello");
+        StringfulArgument<String[], Void> argument = StringfulArgument
+                .from(String[].class, Void.class,"message")
+                .defaultNode(StringfulArgument.from(int.class, Void.class, "count"));
+        StringfulData<Void> data = parser.parse(argument, "hello hello hello");
         Assertions.assertArrayEquals(new String[]{"hello", "hello", "hello"}, data.getValue("message"));
         data = parser.parse(argument, "[hello hello hello] 32");
         Assertions.assertArrayEquals(new String[]{"hello", "hello", "hello"}, data.getValue("message"));

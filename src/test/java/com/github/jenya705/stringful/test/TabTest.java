@@ -17,18 +17,18 @@ public class TabTest {
 
     @Test
     public void test1() {
-        StringfulArgument<String> root = StringfulArgument
-                .from(String.class, "hello")
+        StringfulArgument<String, Void> root = StringfulArgument
+                .from(String.class, Void.class, "hello")
                 .node("jenya705", StringfulArgument
-                        .from(String.class, "name")
+                        .from(String.class, Void.class,"name")
                         .tab("jenya705", "dj5613")
                 )
                 .defaultNode(StringfulArgument
-                        .from(String.class, "secondname")
+                        .from(String.class, Void.class, "secondname")
                         .tab("secondname", "firstname")
                 );
         StringfulArgumentParser parser = new StringfulArgumentParser();
-        StringfulData data = parser.parse(root, "jenya705 ");
+        StringfulData<Void> data = parser.parse(root, "jenya705 ");
         Collection<String> tab = data.handleTab(true);
         Assertions.assertEquals(Arrays.asList("jenya705", "dj5613"), new ArrayList<>(tab));
         Collection<String> tab2 = data.handleTab(false);

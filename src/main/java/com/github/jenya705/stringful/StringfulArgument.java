@@ -13,10 +13,10 @@ import java.util.function.Function;
  *
  * @author Jenya705
  */
-public interface StringfulArgument<T> {
+public interface StringfulArgument<T, A> {
 
     @NotNull
-    static <T> StringfulArgument<T> from(Class<T> clazz, String argumentName) {
+    static <T, A> StringfulArgument<T, A> from(Class<T> clazz, Class<A> additionalClazz, String argumentName) {
         return new StringfulArgumentImpl<>(argumentName, clazz);
     }
 
@@ -28,7 +28,7 @@ public interface StringfulArgument<T> {
      * @return argument with added tab
      */
     @NotNull
-    StringfulArgument<T> tab(String... values);
+    StringfulArgument<T, A> tab(String... values);
 
     /**
      *
@@ -38,7 +38,7 @@ public interface StringfulArgument<T> {
      * @return argument with added tab
      */
     @NotNull
-    StringfulArgument<T> tab(Collection<String> values);
+    StringfulArgument<T, A> tab(Collection<String> values);
 
     /**
      *
@@ -48,7 +48,7 @@ public interface StringfulArgument<T> {
      * @return argument with that tab function
      */
     @NotNull
-    StringfulArgument<T> tab(Function<StringfulData, Collection<String>> function);
+    StringfulArgument<T, A> tab(Function<StringfulData<A>, Collection<String>> function);
 
     /**
      *
@@ -58,7 +58,7 @@ public interface StringfulArgument<T> {
      * @return argument with set default argument
      */
     @NotNull
-    StringfulArgument<T> defaultNode(StringfulArgument<?> node);
+    StringfulArgument<T, A> defaultNode(StringfulArgument<?, A> node);
 
     /**
      *
@@ -69,7 +69,7 @@ public interface StringfulArgument<T> {
      * @return argument with added node
      */
     @NotNull
-    StringfulArgument<T> node(T byValue, StringfulArgument<?> node);
+    StringfulArgument<T, A> node(T byValue, StringfulArgument<?, A> node);
 
     /**
      *
@@ -79,7 +79,7 @@ public interface StringfulArgument<T> {
      * @return argument with added handler
      */
     @NotNull
-    StringfulArgument<T> handler(Consumer<StringfulData> handler);
+    StringfulArgument<T, A> handler(Consumer<StringfulData<A>> handler);
 
     @NotNull
     String getName();
@@ -88,12 +88,12 @@ public interface StringfulArgument<T> {
     Class<T> getArgumentClass();
 
     @Nullable
-    StringfulArgument<?> getNextNode(Object value);
+    StringfulArgument<?, A> getNextNode(Object value);
 
     @Nullable
-    Consumer<StringfulData> getHandler();
+    Consumer<StringfulData<A>> getHandler();
 
     @NotNull
-    Collection<String> handleTab(StringfulData data);
+    Collection<String> handleTab(StringfulData<A> data);
 
 }
