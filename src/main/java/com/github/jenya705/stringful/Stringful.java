@@ -1,5 +1,10 @@
 package com.github.jenya705.stringful;
 
+import com.github.jenya705.stringful.error.RuntimeStringfulException;
+import com.github.jenya705.stringful.error.StringfulError;
+import com.github.jenya705.stringful.error.StringfulErrorManager;
+import com.github.jenya705.stringful.error.StringfulErrorParser;
+
 import java.util.Collection;
 import java.util.function.Consumer;
 
@@ -9,10 +14,11 @@ import java.util.function.Consumer;
  *
  * @author Jenya705
  */
-public interface Stringful<A> {
+public interface Stringful<A, C> {
 
-    static <A> Stringful<A> create(Class<A> additionalClass) {
-        return new StringfulImpl<>(additionalClass);
+    static <A, C> Stringful<A, C> create(Class<A> additionalClass,
+                                         StringfulErrorParser<C, StringfulError<C>, Throwable> defaultErrorParser) {
+        return new StringfulImpl<>(additionalClass, defaultErrorParser);
     }
 
     <T> StringfulArgument<T, A> createCommand(String name, Class<T> clazz);
@@ -21,11 +27,13 @@ public interface Stringful<A> {
 
     StringfulArgument<String, A> getRootCommand();
 
-    <T> Stringful<A> argumentCreator(Class<T> clazz, Consumer<StringfulArgument<T, A>> argument);
+    <T> Stringful<A, C> argumentCreator(Class<T> clazz, Consumer<StringfulArgument<T, A>> argument);
 
     StringfulArgumentParser getParser();
 
-    default <T> Stringful<A> argumentParser(Class<T> clazz, StringfulArgumentParser.Parser<T> parser) {
+    StringfulErrorManager<C> getErrorManager();
+
+    default <T> Stringful<A, C> argumentParser(Class<T> clazz, StringfulArgumentParser.Parser<T> parser) {
         getParser().newParser(clazz, parser);
         return this;
     }
@@ -43,6 +51,20 @@ public interface Stringful<A> {
     default Collection<String> tabCommand(String input) {
         StringfulData<A> data = parseCommand(input);
         return data.handleTab(input.endsWith(" "));
+    }
+
+    default StringfulResult<StringfulData<A>, C> handleWithErrorHandling(String input) {
+        try {
+            return StringfulResult.success(handleCommand(input));
+        } catch (RuntimeStringfulException e) {
+            return StringfulResult.error(
+                    getErrorManager().toMessage(
+                            e.getLeft(),
+                            e.getCause() == null ? e: e.getCause(),
+                            e.getRight()
+                    )
+            );
+        }
     }
 
 }

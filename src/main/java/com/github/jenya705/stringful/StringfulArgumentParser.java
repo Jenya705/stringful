@@ -1,6 +1,9 @@
 package com.github.jenya705.stringful;
 
 import com.github.jenya705.stringful.bukkit.BukkitStringful;
+import com.github.jenya705.stringful.error.RuntimeStringfulException;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,6 +21,80 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class StringfulArgumentParser {
 
+    @Getter
+    @RequiredArgsConstructor
+    private static class ParserIteratorImpl implements Iterator<String> {
+
+        private final String input;
+
+        private int current = 0;
+        private boolean brackets = false;
+
+        @Override
+        public boolean hasNext() {
+            return realHasNext() &&
+                    !(brackets && (input.charAt(current) == ']' || input.charAt(current) == '['));
+        }
+
+        public boolean realHasNext() {
+            return input.length() != current;
+        }
+
+        @Override
+        public String next() {
+            while (input.charAt(current) == ' ') current++;
+            int lastWhitespace = input.indexOf(' ', current);
+            int startCurrent = current;
+            char startChar = input.charAt(current);
+            if (startChar == '"') {
+                boolean skipNext = false;
+                while (true) {
+                    if (skipNext) {
+                        skipNext = false;
+                    }
+                    else {
+                        if (input.length() == current) throw new RuntimeStringfulException("No end of quotes", input, "");
+                        char ch = input.charAt(current);
+                        if (ch == '"') {
+                            return input.substring(startCurrent, current);
+                        }
+                        if (ch == '\\') {
+                            skipNext = true;
+                        }
+                    }
+                    current++;
+                }
+            }
+            if ((startChar == ']' && brackets) || (startChar == '[' && !brackets)) {
+                throw new IndexOutOfBoundsException();
+            }
+            if (lastWhitespace == -1) {
+                current = input.length();
+                int ends = input.length();
+                if (brackets && input.charAt(ends - 1) == ']') {
+                    ends--;
+                }
+                return input.substring(startCurrent, ends);
+            }
+            if (brackets && input.charAt(lastWhitespace - 1) == ']') {
+                lastWhitespace--;
+                current = lastWhitespace;
+            }
+            else {
+                current = lastWhitespace + 1;
+            }
+            return input.substring(startCurrent, lastWhitespace);
+        }
+
+        public void newParser() {
+            if (!realHasNext()) return;
+            char currentChar = input.charAt(current);
+            brackets = currentChar == '[';
+            if (brackets || currentChar == ']') current++;
+        }
+
+    }
+
     /**
      * Value parser
      *
@@ -32,7 +109,7 @@ public class StringfulArgumentParser {
          * @param values string values which is included in parser (if arguments in brackets list iterator will be limited)
          * @return Parsed value
          */
-        @Nullable T parse(@NotNull ListIterator<String> values);
+        @Nullable T parse(@NotNull Iterator<String> values);
 
     }
 
@@ -51,7 +128,7 @@ public class StringfulArgumentParser {
         newParser(Long.class, values -> Long.valueOf(values.next()));
         newParser(Float.class, values -> Float.valueOf(values.next()));
         newParser(Double.class, values -> Double.valueOf(values.next()));
-        newParser(String.class, ListIterator::next);
+        newParser(String.class, Iterator::next);
         newParser(String[].class, values -> {
             List<String> newList = new ArrayList<>();
             while (values.hasNext()) newList.add(values.next());
@@ -65,93 +142,32 @@ public class StringfulArgumentParser {
     }
 
     public <A> @NotNull StringfulData<A> parse(@NotNull StringfulArgument<?, A> root, @NotNull String input, @Nullable A additionalInformation) {
-        List<List<String>> parsedObjects = parseToObjects(input);
+        ParserIteratorImpl iterator = new ParserIteratorImpl(input);
         StringfulArgument<?, A> currentArgument = root;
         Map<String, Object> values = new HashMap<>();
         List<StringfulArgument<?, A>> arguments = new ArrayList<>();
-        arguments.add(currentArgument);
-        bracketsLoop:
-        for (List<String> brackets : parsedObjects) {
-            ListIterator<String> currentIterator = brackets.listIterator();
-            while (true) {
-                if (currentArgument == null) break bracketsLoop;
-                Object obj = parsers.get(currentArgument.getArgumentClass()).parse(currentIterator);
+        iterator.newParser();
+        while (iterator.realHasNext()) {
+            arguments.add(currentArgument);
+            try {
+                Object obj = parsers.get(currentArgument.getArgumentClass()).parse(iterator);
                 values.put(currentArgument.getName(), obj);
                 currentArgument = currentArgument.getNextNode(obj);
-                arguments.add(currentArgument);
-                if (!currentIterator.hasNext()) {
-                    continue bracketsLoop;
-                }
+                iterator.newParser();
+            } catch (Throwable throwable) {
+                throw new RuntimeStringfulException(
+                        throwable,
+                        iterator.getInput().substring(0, iterator.getCurrent()),
+                        iterator.realHasNext() ?
+                                iterator.getInput().substring(iterator.getCurrent()) : ""
+                );
             }
         }
-        arguments.remove(arguments.size() - 1);
         return new StringfulData<>(arguments, values, additionalInformation);
     }
 
     public <T> void newParser(@NotNull Class<T> clazz, @NotNull Parser<T> parser) {
         parsers.put(clazz, parser::parse);
-    }
-
-    private List<List<String>> parseToObjects(String input) {
-        List<List<String>> endList = new ArrayList<>();
-        List<String> currentBrackets = new ArrayList<>();
-        boolean skipNext = false;
-        int bracketsStart = -1;
-        boolean inContainer = false;
-        int wordStart = 0;
-        int i = 0;
-        for (char ch : input.toCharArray()) {
-            if (!skipNext) {
-                if (ch == '[') { // brackets start
-                    if (bracketsStart != -1) throw new IllegalArgumentException("Brackets in brackets!");
-                    bracketsStart = i;
-                    if (!currentBrackets.isEmpty()) endList.add(currentBrackets);
-                    wordStart++;
-                    currentBrackets = new ArrayList<>();
-                }
-                else if (ch == ']') {
-                    if (bracketsStart != -1) {
-                        if (wordStart != i) {
-                            currentBrackets.add(input.substring(wordStart, i));
-                            wordStart = i + 1;
-                        }
-                        endList.add(currentBrackets);
-                        currentBrackets = new ArrayList<>();
-                    }
-                }
-                else if (ch == '\\') {
-                    skipNext = true;
-                }
-                else if (ch == '"' || ch == '\'') {
-                    if (inContainer) {
-                        currentBrackets.add(input.substring(wordStart + 1, i));
-                    }
-                    if (wordStart == i) {
-                        inContainer = true;
-                    }
-                }
-                else if (ch == ' ') {
-                    if (!inContainer && wordStart != i) {
-                        currentBrackets.add(input.substring(wordStart, i));
-                    }
-                    wordStart = i + 1;
-                }
-            }
-            else {
-                skipNext = false;
-            }
-            i++;
-        }
-        if (inContainer) {
-            throw new IllegalArgumentException("\" is not closed");
-        }
-        if (wordStart != i) {
-            currentBrackets.add(input.substring(wordStart));
-        }
-        if (!currentBrackets.isEmpty()) {
-            endList.add(currentBrackets);
-        }
-        return endList;
     }
 
 }

@@ -62,7 +62,7 @@ public class BukkitStringful {
         parser.newParser(World.class, iterator -> Bukkit.getWorld(NamespacedKey.minecraft(iterator.next())));
     }
 
-    public void addDefaultArgumentIfNeed(Stringful<?> stringful) {
+    public void addDefaultArgumentIfNeed(Stringful<?, ?> stringful) {
         if (!added) return;
         stringful.argumentCreator(Player.class, arg -> arg
                 .tab(data -> Bukkit

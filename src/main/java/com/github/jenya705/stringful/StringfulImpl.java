@@ -1,32 +1,38 @@
 package com.github.jenya705.stringful;
 
 import com.github.jenya705.stringful.bukkit.BukkitStringful;
+import com.github.jenya705.stringful.error.StringfulError;
+import com.github.jenya705.stringful.error.StringfulErrorManager;
+import com.github.jenya705.stringful.error.StringfulErrorManagerImpl;
+import com.github.jenya705.stringful.error.StringfulErrorParser;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * @author Jenya705
  */
-public class StringfulImpl<A> implements Stringful<A> {
+public class StringfulImpl<A, C> implements Stringful<A, C> {
 
     private final StringfulArgumentParser parser = new StringfulArgumentParser();
+    private final StringfulErrorManager<C> errorManager = new StringfulErrorManagerImpl<>();
     private final Collection<String> commands = new ArrayList<>();
     private final Map<Class<?>, Consumer<StringfulArgument<Object, A>>> argumentCreators = new ConcurrentHashMap<>();
 
     private final StringfulArgument<String, A> rootCommand;
     private final Class<A> additionalClass;
 
-    public StringfulImpl(Class<A> additionalClass) {
+    public StringfulImpl(Class<A> additionalClass,
+                         StringfulErrorParser<C, StringfulError<C>, Throwable> defaultErrorParser) {
         BukkitStringful.addDefaultArgumentIfNeed(this);
         this.additionalClass = additionalClass;
         rootCommand = StringfulArgument
                 .from(String.class, additionalClass,"stringful-root-command")
                 .tab(data -> commands);
+        errorManager.defaultParser(defaultErrorParser);
     }
 
     @Override
@@ -54,7 +60,7 @@ public class StringfulImpl<A> implements Stringful<A> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> Stringful<A> argumentCreator(Class<T> clazz, Consumer<StringfulArgument<T, A>> argument) {
+    public <T> Stringful<A, C> argumentCreator(Class<T> clazz, Consumer<StringfulArgument<T, A>> argument) {
         argumentCreators.put(clazz, obj -> argument.accept((StringfulArgument<T, A>) obj));
         return this;
     }
@@ -62,5 +68,10 @@ public class StringfulImpl<A> implements Stringful<A> {
     @Override
     public StringfulArgumentParser getParser() {
         return parser;
+    }
+
+    @Override
+    public StringfulErrorManager<C> getErrorManager() {
+        return errorManager;
     }
 }
